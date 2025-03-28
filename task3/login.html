@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon - Biometric Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        button {
+            padding: 10px;
+            margin: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Amazon Biometric Login</h2>
+        
+        <div id="otp-section">
+            <button onclick="sendOTP()">Send OTP to Enable Biometrics</button>
+            <input type="text" id="otp-input" placeholder="Enter OTP">
+            <button onclick="verifyOTP()">Verify OTP</button>
+        </div>
+
+        <div id="biometric-section" style="display: none;">
+            <button onclick="registerBiometrics()">Register Face/Fingerprint</button>
+            <button onclick="loginWithBiometrics()">Login with Biometrics</button>
+            <button onclick="disableBiometrics()">Disable Biometrics</button>
+        </div>
+
+        <p id="message"></p>
+    </div>
+
+    <script>
+        let isBiometricEnabled = false;
+
+        function sendOTP() {
+            let otp = Math.floor(100000 + Math.random() * 900000);
+            sessionStorage.setItem("otp", otp);
+            alert("OTP sent to your phone: " + otp);
+        }
+
+        function verifyOTP() {
+            let userOtp = document.getElementById("otp-input").value;
+            let storedOtp = sessionStorage.getItem("otp");
+
+            if (userOtp === storedOtp) {
+                document.getElementById("otp-section").style.display = "none";
+                document.getElementById("biometric-section").style.display = "block";
+                document.getElementById("message").innerText = "OTP Verified. You can now enable biometrics.";
+            } else {
+                alert("Incorrect OTP. Try again.");
+            }
+        }
+
+        async function registerBiometrics() {
+            if (!window.PublicKeyCredential) {
+                alert("Biometric authentication not supported on this device.");
+                return;
+            }
+
+            try {
+                let credential = await navigator.credentials.create({
+                    publicKey: {
+                        challenge: new Uint8Array(32),
+                        rp: { name: "Amazon" },
+                        user: { id: new Uint8Array(16), name: "user@example.com", displayName: "Amazon User" },
+                        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+                        authenticatorSelection: { authenticatorattachment: "platform", userVerification: "required" },
+                    }
+                });
+
+                isBiometricEnabled = true;
+                alert("Biometric registered successfully!");
+            } catch (error) {
+                alert("Biometric registration failed: " + error);
+            }
+        }
+
+        async function loginWithBiometrics() {
+            if (!isBiometricEnabled) {
+                alert("Biometric login is not enabled.");
+                return;
+            }
+
+            try {
+                let assertion = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: new Uint8Array(32),
+                        userVerification: "required"
+                    }
+                });
+
+                alert("Biometric login successful! Welcome back.");
+            } catch (error) {
+                alert("Biometric login failed: " + error);
+            }
+        }
+
+        function disableBiometrics() {
+            isBiometricEnabled = false;
+            alert("Biometric authentication disabled.");
+        }
+    </script>
+
+</body>
+</html>
